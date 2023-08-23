@@ -1,0 +1,86 @@
+#include <stdio.h>
+#include <string.h>
+
+struct Student {
+    int roll_number;
+    char name[50];
+};
+
+struct Index {
+    int roll_number;
+    long offset;
+};
+
+int main() {
+    struct Student student;
+    struct Index index;
+    FILE *data_file, *index_file;
+
+    data_file = fopen("students.dat", "wb");
+    if (data_file == NULL) {
+        printf("Error opening data file.\n");
+        return 1;
+    }
+
+    index_file = fopen("index.dat", "wb");
+    if (index_file == NULL) {
+        printf("Error opening index file.\n");
+        return 1;
+    }
+
+    for (int i = 0; i < 3; i++) {
+        printf("Enter details for Student %d:\n", i + 1);
+        printf("Roll Number: ");
+        scanf("%d", &student.roll_number);
+        printf("Name: ");
+        scanf("%s", student.name);
+
+        fwrite(&student, sizeof(struct Student), 1, data_file);
+
+        index.roll_number = student.roll_number;
+        index.offset = ftell(data_file) - sizeof(struct Student);
+        fwrite(&index, sizeof(struct Index), 1, index_file);
+    }
+
+    fclose(data_file);
+    fclose(index_file);
+
+    int roll;
+    printf("\nEnter Roll Number to retrieve details: ");
+    scanf("%d", &roll);
+
+    index_file = fopen("index.dat", "rb");
+    if (index_file == NULL) {
+        printf("Error opening index file.\n");
+        return 1;
+    }
+
+    int found = 0;
+    while (fread(&index, sizeof(struct Index), 1, index_file)) {
+        if (index.roll_number == roll) {
+            found = 1;
+            break;
+        }
+    }
+
+    if (found) {
+        data_file = fopen("students.dat", "rb");
+        if (data_file == NULL) {
+            printf("Error opening data file.\n");
+            return 1;
+        }
+
+        fseek(data_file, index.offset, SEEK_SET);
+        fread(&student, sizeof(struct Student), 1, data_file);
+        printf("\nStudent details:\n");
+        printf("Roll Number: %d, Name: %s\n", student.roll_number, student.name);
+
+        fclose(data_file);
+    } else {
+        printf("Student not found.\n");
+    }
+
+    fclose(index_file);
+
+    return 0;
+}
